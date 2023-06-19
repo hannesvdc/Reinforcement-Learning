@@ -43,7 +43,7 @@ def step(state, action):
 
 	# Return
 	reward = rewards[next_state]
-	return next_state, reward, (next_state == 500)
+	return next_state, reward, (next_state >= 498 and next_state <= 502)
 
 def testStateMapping(): # Opnieuw testen
 	print('State Test')

@@ -5,7 +5,7 @@ import statistics
 def Q_learning():
 	Q_Table = np.zeros((state_space.size, action_space.size))
 
-	n_episodes = 1000
+	n_episodes = 3000
 	max_steps = 10**5
 	gamma = 0.95
 	lr = 0.1
@@ -64,7 +64,8 @@ def followOptimalPath():
 	total_reward = 0.0
 	while True:
 		action = np.argmax(Q_Table[state,:])
-		state, reward, done = sep(state, action)
+		state, reward, done = step(state, action)
+		print(state)
 
 		states.append(state)
 		total_reward += reward
@@ -77,4 +78,4 @@ def followOptimalPath():
 
 
 if __name__ == '__main__':
-	Q_learning()
+	followOptimalPath()
