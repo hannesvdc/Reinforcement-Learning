@@ -1,10 +1,11 @@
 from model import *
 import matplotlib.pyplot as plt
+import statistics
 
 def Q_learning():
 	Q_Table = np.zeros((state_space.size, action_space.size))
 
-	n_episodes = 1
+	n_episodes = 1000
 	max_steps = 10**5
 	gamma = 0.95
 	lr = 0.1
@@ -16,7 +17,8 @@ def Q_learning():
 
 	rewards_per_episode = list()
 	for episode in range(1, n_episodes+1):
-		state = -2.0
+		state = state_coor_to_index(-2.0)
+		#print('Initial State', state)
 
 		done = False
 		episode_reward = 0.0
@@ -25,7 +27,7 @@ def Q_learning():
 			# The environment runs the chosen action and returns
 			# the next state, a reward and true if the epiosed is ended.
 			if rd.uniform(0.0, 1.0) <= exploration_probability:
-				action = action_space[rd.randint(0,101)]
+				action = rd.randint(0,101)
 			else:
 				action = np.argmax(Q_Table[state,:])
 			next_state, reward, done = step(state, action)
@@ -40,16 +42,38 @@ def Q_learning():
 			if done:
 				break
 
-
 		averaged_episode_reward = episode_reward / len(episode_states)
-		print('Episode #', e, 'States:', episode_states, averaged_episode_reward, total_episode_reward)
+		#print('Episode #', episode, 'States:', episode_states, averaged_episode_reward, episode_reward)
+		#print('Episode #', episode, averaged_episode_reward)
 
 		#We update the exploration proba using exponential decay formula 
 		exploration_probability = max(min_exploration_probability, np.exp(-lam*episode))
-		total_rewards_episode.append(averaged_episode_reward)
+		rewards_per_episode.append(averaged_episode_reward)
 
 		if episode % 100 == 0:
 			print('Episode #',episode,':', statistics.mean(rewards_per_episode))
+
+	print('Storing Q_Table.')
+	np.save('Q_Table.npy', Q_Table)
+
+def followOptimalPath():
+	Q_Table  = np.load('Q_Table.npy')
+
+	state = state_coor_to_index(-2.0)
+	states = [state]
+	total_reward = 0.0
+	while True:
+		action = np.argmax(Q_Table[state,:])
+		state, reward, done = sep(state, action)
+
+		states.append(state)
+		total_reward += reward
+		if done:
+			print('Reached Final State')
+			break
+
+	print('States', states)
+	print('Cumulated Reward', total_reward)
 
 
 if __name__ == '__main__':
