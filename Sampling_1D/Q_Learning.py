@@ -5,7 +5,7 @@ import statistics
 def Q_learning():
 	Q_Table = np.zeros((state_space.size, action_space.size))
 
-	n_episodes = 3000
+	n_episodes = 100000
 	max_steps = 10**5
 	gamma = 0.95
 	lr = 0.1
@@ -17,8 +17,7 @@ def Q_learning():
 
 	rewards_per_episode = list()
 	for episode in range(1, n_episodes+1):
-		state = state_coor_to_index(-2.0)
-		#print('Initial State', state)
+		state = rd.randint(0,1001) # state = state_coor_to_index(-2.0)
 
 		done = False
 		episode_reward = 0.0
@@ -54,28 +53,69 @@ def Q_learning():
 			print('Episode #',episode,':', statistics.mean(rewards_per_episode))
 
 	print('Storing Q_Table.')
-	np.save('Q_Table.npy', Q_Table)
+	np.save('Q_Table_Random.npy', Q_Table)
 
-def followOptimalPath():
-	Q_Table  = np.load('Q_Table.npy')
-
-	state = state_coor_to_index(-2.0)
-	states = [state]
-	total_reward = 0.0
+def _followPath(Q_Table, state):
+	all_states = [state]
+	total_discounted_reward = rewards[state]
+	discounter = 1.0
+	gamma = 0.95
 	while True:
 		action = np.argmax(Q_Table[state,:])
-		state, reward, done = step(state, action)
-		print(state)
+		new_state, reward, _ = step(state, action)
 
-		states.append(state)
-		total_reward += reward
-		if done:
-			print('Reached Final State')
+		if new_state == state:
 			break
 
-	print('States', states)
-	print('Cumulated Reward', total_reward)
+		state = new_state
+		all_states.append(state)
+		total_discounted_reward += gamma**discounter * reward
+		discounter += 1
+
+	return all_states, total_discounted_reward
+
+def plotValueFunction():
+	Q_Table = np.load('Q_Table_Random.npy')
+
+	state_space = np.linspace(-6.0, 6.0, 1001)
+	values = []
+	for i in range(len(state_space)):
+		state = state_coor_to_index(state_space[i])
+
+		all_states, total_discounted_reward = _followPath(Q_Table, state)
+		values.append(total_discounted_reward)
+
+	values = np.array(values)
+	values = 0.5*(values + values[::-1])
+
+	# Filter frequency 1000
+	fft_values = np.fft.fft(values)
+	fft_values[50:1000] = 0.0
+	ifft_values = np.fft.ifft(fft_values)
+
+	plt.plot(state_space, values)
+	plt.xlabel('State')
+	plt.ylabel('Value Function')
+
+	plt.figure()
+	plt.plot(state_space, ifft_values)
+	plt.plot(np.linspace(-25.0, 25.0, 1001), 6.0*np.exp(-0.5*np.linspace(-25.0, 25.0, 1001)**2/20.0))
+	plt.xlabel('State')
+	plt.ylabel('Value Function')
+
+	plt.show()
+
+def followOptimalPath():
+	Q_Table  = np.load('Q_Table_Random.npy')
+
+	# Generate random initial conditioin and see if it converges
+	# under the policy of Q.
+	state = rd.randint(0,1001)
+	all_states, total_discounted_reward = _followPath(Q_Table, state)
+
+	print('States', all_states)
+	print('Cumulated Reward', total_discounted_reward)
 
 
 if __name__ == '__main__':
-	followOptimalPath()
+	plotValueFunction()
